@@ -1,11 +1,95 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>Мой сайт</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>День форскуба</title>
+  <style>
+    :root { --bg: #0f172a; --fg: #e2e8f0; --muted:#94a3b8; }
+    html,body { height:100%; }
+    body {
+      margin:0; display:grid; place-items:center; gap:16px;
+      background: radial-gradient(1200px 800px at 50% -10%, #1e293b 0%, var(--bg) 60%);
+      color:var(--fg); font: 600 20px/1.3 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    }
+    .card {
+      text-align:center; padding:32px 28px; border-radius:24px;
+      background: rgba(255,255,255,0.04); backdrop-filter: blur(8px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    .title { font-size: clamp(24px, 4vw, 36px); margin:0 0 10px; }
+    .number { font-size: clamp(48px, 10vw, 120px); letter-spacing: 2px; margin: 6px 0 14px; }
+    .caption { color: var(--muted); font-weight:500; }
+    .footer { font-size:12px; color:var(--muted); margin-top:18px; }
+    .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+  </style>
 </head>
 <body>
-    <h1>Привет, мир!</h1>
-    <p>Эпiлох лох!</p>
+  <main class="card" role="main" aria-live="polite" aria-atomic="true">
+    <h1 class="title">В данный момент проходит</h1>
+    <div class="number" id="dayNumber">—</div>
+    <div class="caption">день форскуба</div>
+    <div class="footer" id="note"></div>
+    <p class="sr-only" id="srText"></p>
+  </main>
+
+  <script>
+    // Настройка даты старта: 27.07.2025 (дд.мм.гггг), ЛОКАЛЬНАЯ календарная дата.
+    // "Проходит N день" обычно считает стартовый день как 1,
+    // поэтому используем daysElapsed + 1 для отображения.
+    const START = new Date(2025, 6, 27); // Месяцы с нуля: 6 = июль
+
+    const pad = n => String(n).padStart(2, '0');
+
+    function atLocalMidnight(d){
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+
+    function calcDayNumber(now = new Date()){
+      const todayMid = atLocalMidnight(now);
+      const startMid = atLocalMidnight(START);
+
+      const MS_PER_DAY = 24 * 60 * 60 * 1000;
+      const elapsed = Math.floor((todayMid - startMid) / MS_PER_DAY);
+
+      // День события: elapsed + 1 (если дата >= старта), минимум 1
+      return elapsed >= 0 ? (elapsed + 1) : 0;
+    }
+
+    function russianPlural(n, one, few, many) {
+      // Универсальная функция склонения, если понадобится
+      const mod10 = n % 10, mod100 = n % 100;
+      if (mod10 === 1 && mod100 !== 11) return one;
+      if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+      return many;
+    }
+
+    function render(){
+      const n = calcDayNumber();
+      const dayEl = document.getElementById('dayNumber');
+      const noteEl = document.getElementById('note');
+      const srEl = document.getElementById('srText');
+
+      if (n === 0){
+        // До старта
+        const now = new Date();
+        const startMid = new Date(2025, 6, 27);
+        const MS_PER_DAY = 24 * 60 * 60 * 1000;
+        const daysLeft = Math.ceil((atLocalMidnight(startMid) - atLocalMidnight(now)) / MS_PER_DAY);
+        dayEl.textContent = '0';
+        noteEl.textContent = `Старт ${pad(27)}.${pad(7)}.2025 — осталось ${daysLeft} ${russianPlural(daysLeft,'день','дня','дней')}.`;
+        srEl.textContent = `До начала осталось ${daysLeft} ${russianPlural(daysLeft,'день','дня','дней')}.`;
+      } else {
+        dayEl.textContent = n.toLocaleString('ru-RU');
+        noteEl.textContent = `Отсчёт с 27.07.2025 (локальная дата, обновляется в полночь).`;
+        srEl.textContent = `Сейчас идёт ${n}-й день форскуба.`;
+      }
+    }
+
+    render();
+
+    // Обновляем около полуночи: пересчёт раз в минуту (лёгкая нагрузка).
+    setInterval(render, 60 * 1000);
+  </script>
 </body>
 </html>
